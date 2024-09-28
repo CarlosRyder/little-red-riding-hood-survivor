@@ -14,8 +14,6 @@ public class Bear : MonoBehaviour
 
     [SerializeField] Rigidbody2D bearRb;
     [SerializeField] private int speed = 30;
-    [SerializeField] private int range = 10;
-
     [SerializeField] private int detectionDistance = 30;
     // Start is called before the first frame update
     void Start()
@@ -25,7 +23,7 @@ public class Bear : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         positionPlayer = transformPlayer.position;
         if (DistanceToPlayer() <= detectionDistance)
