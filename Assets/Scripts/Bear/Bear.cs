@@ -1,73 +1,113 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Bear : MonoBehaviour
 {
-    [Header("Player")]
-    [SerializeField] private GameObject player;
-    private static Vector3 positionPlayer;
-    private static Transform transformPlayer;
+    public Transform player;
+    private NavMeshAgent agent;
+    public float detectionRange = 5f; 
+    public float patrolRadius = 10f;  
+    public float patrolDelay = 3f;    
+    private bool isPatrolling = false;
+    private Animator animator;
+    private int attackRange = 5;
 
-    [Header("Variables")]
-
-    [SerializeField] Rigidbody2D bearRb;
-    [SerializeField] private int speed = 30;
-    [SerializeField] private int detectionDistance = 30;
-    // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
-        transformPlayer = player.GetComponent<Transform>();  
-        bearRb = GetComponent<Rigidbody2D>();  
+        agent = GetComponent<NavMeshAgent>();
+        animator = GetComponent<Animator>();
+    }
+
+    private void Start() {
+        agent.updateRotation = false;
+        agent.updateUpAxis = false;
+
+       
+        StartCoroutine(Patrol());
     }
 
     // Update is called once per frame
-    void FixedUpdate()
+    void Update()
     {
-        positionPlayer = transformPlayer.position;
-        if (DistanceToPlayer() <= detectionDistance)
+        
+        UpdateAnimation();
+
+        
+        Vector2 direction = (agent.velocity).normalized;
+
+      
+        if (Vector3.Distance(transform.position, player.position) < detectionRange)
         {
-            MoveTowardsPlayer();
+            if (Vector3.Distance(transform.position, player.position) < attackRange)
+            {
+                Debug.Log("attack");
+                //implement attack logic
+            }
+            else{
+                agent.SetDestination(player.position);
+                isPatrolling = false;
+            }
+
         }
-        
+        else if (!isPatrolling)
+        {
+           
+            isPatrolling = true;
+            StartCoroutine(Patrol());
+        }
 
         
-
-        
+        if (direction != Vector2.zero)
+        {
+            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle));
+        }
     }
 
-    private float DistanceToPlayer()
+    
+    void UpdateAnimation()
     {
-        // Calcular la distancia al jugador
-        if (player != null)
+        
+        float speed = agent.velocity.magnitude;
+
+        
+        if (speed > 0.1f)  
         {
-            return Vector3.Distance(transform.position, player.transform.position);
+            animator.SetBool("isWalk", true);
         }
-        return Mathf.Infinity; // Retorna infinito si el jugador no está disponible
+        else
+        {
+            animator.SetBool("isWalk", false);
+        }
     }
 
-    private void MoveTowardsPlayer()
+   
+    IEnumerator Patrol()
     {
-        if (player != null)
+        while (isPatrolling)
         {
-            // Calculate the direction to the player
-            Vector3 lookDirection = (player.transform.position - transform.position).normalized;
             
+            yield return new WaitForSeconds(5f);
 
-            // Calculate angle in radians and convert to degrees
-            float angle = Mathf.Atan2(lookDirection.y, lookDirection.x) * Mathf.Rad2Deg;
-
-            // Create the rotation towards the player in 2D
-            Quaternion targetRotation = Quaternion.Euler(new Vector3(0, 0, angle));
-
-            // Rotate the spider smoothly towards the player's direction.
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * speed);
-
-            // Move to player
-            Vector3 movement = lookDirection * speed * Time.deltaTime;
-            bearRb.MovePosition(transform.position + movement);
+           
+            Vector3 randomPoint = GetRandomPoint(transform.position, patrolRadius);
+            agent.SetDestination(randomPoint);
         }
     }
 
+    
+    Vector3 GetRandomPoint(Vector3 center, float range)
+    {
+        Vector3 randomDirection = Random.insideUnitSphere * range;
+        randomDirection += center;
+
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(randomDirection, out hit, range, NavMesh.AllAreas))
+        {
+            return hit.position; 
+        }
+
+        return center; 
+    }
 }
