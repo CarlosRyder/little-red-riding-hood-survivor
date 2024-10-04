@@ -2,12 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerMovement : MonoBehaviour
+public class PlayerController : MonoBehaviour
 {
     #region Variables
     [SerializeField] private float speed = 1f;
     [SerializeField] private float raycastDistance = 1f; // Distance for the raycast
-    private Rigidbody2D rigidbody2D;
+    private new Rigidbody2D rigidbody2D;
     private Vector2 moveInput;
     private Animator animator;
 
